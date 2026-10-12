@@ -1,0 +1,40 @@
+name: Keeper
+
+# Fallback timer: GitHub's cron scheduler can be delayed for hours (it never
+# fired for this repo's first day). This job stays alive for ~5.5 h, dispatches
+# the Pages rebuild every 30 minutes, then re-dispatches itself.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 */6 * * *"
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: keeper
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Dispatch the map rebuild every 30 minutes
+        run: |
+          end=$(( $(date +%s) + 330*60 ))
+          last=""
+          while [ "$(date +%s)" -lt "$end" ]; do
+            slot=$(date -u +%Y%m%d%H)$(( 10#$(date -u +%M) / 30 ))
+            if [ "$last" != "$slot" ]; then
+              gh workflow run pages.yml --repo "$REPO" && last=$slot
+            fi
+            sleep 60
+          done
+      - name: Hand over to the next keeper
+        if: always()
+        run: gh workflow run keeper.yml --repo "$REPO"
