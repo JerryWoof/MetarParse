@@ -1,0 +1,23 @@
+# Publish to PyPI with trusted publishing (no API token stored anywhere).
+# One-time setup on pypi.org: Account -> Publishing -> add a pending publisher
+# for project "metar-parse", owner JerryWoof, repo MetarParse, workflow
+# publish.yml, environment pypi. Then run this workflow from the Actions tab.
+name: Publish to PyPI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build
+      - run: python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1
