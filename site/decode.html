@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Decode METAR · MetarParse</title>
+  <meta name="description" content="Paste a METAR or TAF and decode it instantly in your browser with MetarParse, the open-source Python parser, running on Pyodide. Readable cards, highlighted tokens, JSON output and shareable links.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1120" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="Decode a METAR or TAF · MetarParse Live">
+  <meta property="og:description" content="Paste any METAR or TAF and decode it in your browser with the open-source MetarParse Python library.">
+  <meta property="og:url" content="https://jerrywoof.github.io/MetarParse/decode.html">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="decode.css">
+</head>
+<body>
+  <a class="skip-link" href="#reports">Skip to the decoder</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="MetarParse Live home">
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f172a"/><circle cx="32" cy="32" r="22" fill="none" stroke="#334155" stroke-width="2.5"/><circle cx="32" cy="32" r="12" fill="none" stroke="#334155" stroke-width="2.5"/><path d="M32 32 L32 10 A22 22 0 0 1 51 21 Z" fill="#22c55e" opacity=".35"/><circle cx="32" cy="32" r="4" fill="#e2e8f0"/><circle cx="44" cy="20" r="5" fill="#22c55e"/><circle cx="21" cy="42" r="4" fill="#3b82f6"/><circle cx="45" cy="44" r="3.5" fill="#ef4444"/></svg>
+        <span>MetarParse Live</span>
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="index.html">Map</a>
+        <a href="decode.html" aria-current="page">Decode</a>
+        <a href="https://github.com/JerryWoof/MetarParse" class="gh-link" rel="noopener">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span>GitHub</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="intro">
+      <h1>Decode a METAR or TAF</h1>
+      <p>Paste any aviation weather report and see it decoded by the real
+        <a href="https://github.com/JerryWoof/MetarParse">MetarParse</a> Python library,
+        running right here in your browser. Nothing is sent to a server.</p>
+    </section>
+
+    <section class="input-panel" aria-labelledby="input-label">
+      <div class="input-head">
+        <label id="input-label" for="reports">Reports <span class="hint">one per line; TAF continuation lines are joined</span></label>
+        <div id="py-status" class="py-status" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="py-status-text">Loading Python in your browser… (about 10&nbsp;MB the first time)</span>
+        </div>
+      </div>
+      <textarea id="reports" spellcheck="false" autocomplete="off" autocapitalize="characters" rows="5"
+        placeholder="METAR LKPR 121430Z 28008KT 9999 FEW045 14/06 Q1022 NOSIG"></textarea>
+
+      <div class="toolbar">
+        <div class="examples" role="group" aria-label="Examples">
+          <span class="toolbar-label">Examples</span>
+          <div id="example-chips" class="chips"></div>
+        </div>
+        <form id="live-form" class="live" autocomplete="off">
+          <label for="live-icao" class="toolbar-label">Fetch live</label>
+          <div class="live-row">
+            <input id="live-icao" name="icao" type="text" inputmode="text" maxlength="4" placeholder="ICAO, e.g. EGLL"
+              pattern="[A-Za-z0-9]{3,4}" aria-describedby="live-msg" autocapitalize="characters">
+            <button type="submit" class="btn">Fetch</button>
+          </div>
+          <p id="live-msg" class="live-msg" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="share-btn" class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Copy share link
+        </button>
+        <button type="button" id="clear-btn" class="btn btn-ghost">Clear</button>
+        <span id="action-msg" class="action-msg" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section id="results" class="results" aria-label="Decoded reports" aria-live="polite"></section>
+
+    <section class="code-panel" aria-labelledby="code-title">
+      <h2 id="code-title">Do the same in Python</h2>
+      <p>This page runs the exact same package you can install from PyPI. It has no dependencies and works on Python 3.9+.</p>
+      <div class="code-block">
+        <button type="button" class="btn btn-small copy-btn" data-copy-target="code-install">Copy</button>
+        <pre id="code-install"><code>pip install metar-parse</code></pre>
+      </div>
+      <div class="code-block">
+        <button type="button" class="btn btn-small copy-btn" data-copy-target="code-snippet">Copy</button>
+        <pre id="code-snippet"><code></code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p><strong>Not for operational use.</strong> Decoded output may be incomplete or wrong; always use official sources for flight planning.</p>
+    <p>MetarParse is open source under the MIT licence · <a href="https://github.com/JerryWoof/MetarParse">GitHub</a> · Python in the browser by <a href="https://pyodide.org/">Pyodide</a></p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js" defer></script>
+  <script src="decode.js" defer></script>
+</body>
+</html>
