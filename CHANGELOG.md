@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- MetarParse Live: a world map of live airport weather and an in-browser
+  decoder, deployed to GitHub Pages every 30 minutes.
+- Military colour states (`color_state`), sea state (`sea_state`), kilometre
+  visibility and Australian `INTER` groups.
 - `DayTime.to_datetime(reference)` resolves a day/time group to the nearest
   timezone-aware UTC `datetime`, handling month/year rollover and hour `24`.
 
