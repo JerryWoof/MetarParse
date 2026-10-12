@@ -260,3 +260,12 @@ def test_us_amendment_notes_go_to_remarks():
     taf = parse_taf("TAF KOTM 121138Z 1212/1312 20009KT P6SM SCT200 AMD NOT SKED")
     assert taf.remarks_raw == "AMD NOT SKED"
     assert not taf.issues
+
+
+def test_temperatures_are_not_part_of_the_last_group():
+    taf = parse_taf(
+        "TAF LKPR 121100Z 1212/1312 24012KT 9999 FEW030 BECMG 1300/1302 VRB03KT "
+        "TX18/1214Z TNM02/1305Z"
+    )
+    assert taf.groups[-1].raw == "BECMG 1300/1302 VRB03KT"
+    assert [(t.kind, t.temperature_c) for t in taf.temperatures] == [("TX", 18), ("TN", -2)]
