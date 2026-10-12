@@ -10,3 +10,5 @@ build/
 htmlcov/
 .env
 .DS_Store
+site/data/
+site/pkg/
