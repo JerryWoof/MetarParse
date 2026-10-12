@@ -261,7 +261,14 @@ def parse_taf(raw: str) -> Taf:
         taf.issues.extend(ParseIssue(t, "unexpected token after NIL") for t in tokens[i:])
         return taf
 
-    body = tokens[i:]
+    # TX/TN extremes belong to the whole TAF, not to the group they follow.
+    body = []
+    for token in tokens[i:]:
+        temperature = _parse_temperature(token)
+        if temperature is not None:
+            taf.temperatures.append(temperature)
+        else:
+            body.append(token)
     if not body:
         return taf
 
