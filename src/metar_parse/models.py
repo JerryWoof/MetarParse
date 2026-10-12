@@ -8,6 +8,7 @@ never an exception.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 
 KT_PER_MPS = 1.943844
@@ -36,6 +37,63 @@ class DayTime:
         day = f"{self.day:02d}" if self.day is not None else ""
         hour = f"{self.hour:02d}" if self.hour is not None else ""
         return f"{day}{hour}{self.minute:02d}Z"
+
+    def to_datetime(self, reference: datetime) -> Optional[datetime]:
+        """Resolve to the timezone-aware UTC datetime closest to ``reference``.
+
+        Reports only carry day-of-month and time, so the month and year come
+        from ``reference`` (typically the observation or issue time). Month and
+        year rollover is handled: day 31 referenced on the 1st of the next month
+        resolves to the previous month. Hour 24 means 00:00 of the next day. A
+        missing day picks the nearest matching time of day; a missing hour the
+        nearest matching minute. A naive ``reference`` is taken as UTC.
+
+        Returns ``None`` for impossible values (minute 60, hour 25, day 32) or a
+        day that does not exist within about half a month of ``reference``.
+
+        >>> DayTime(31, 23, 50).to_datetime(datetime(2026, 11, 1, 0, 5))
+        datetime.datetime(2026, 10, 31, 23, 50, tzinfo=datetime.timezone.utc)
+        """
+        if reference.tzinfo is None:
+            reference = reference.replace(tzinfo=timezone.utc)
+        else:
+            reference = reference.astimezone(timezone.utc)
+        if not 0 <= self.minute <= 59:
+            return None
+        if self.hour is not None and not 0 <= self.hour <= 24:
+            return None
+        if self.day is not None and not 1 <= self.day <= 31:
+            return None
+
+        candidates: List[datetime] = []
+        if self.hour is None:
+            base = reference.replace(minute=0, second=0, microsecond=0)
+            for offset in (-1, 0, 1):
+                when = base + timedelta(hours=offset, minutes=self.minute)
+                if self.day is None or when.day == self.day:
+                    candidates.append(when)
+        elif self.day is None:
+            base = reference.replace(hour=0, minute=0, second=0, microsecond=0)
+            for offset in (-1, 0, 1):
+                candidates.append(
+                    base + timedelta(days=offset, hours=self.hour, minutes=self.minute)
+                )
+        else:
+            for offset in (-1, 0, 1):
+                month_index = reference.year * 12 + reference.month - 1 + offset
+                year, month = divmod(month_index, 12)
+                try:
+                    midnight = datetime(year, month + 1, self.day, tzinfo=timezone.utc)
+                except ValueError:  # e.g. 31 September
+                    continue
+                candidates.append(midnight + timedelta(hours=self.hour, minutes=self.minute))
+
+        if not candidates:
+            return None
+        best = min(candidates, key=lambda c: abs(c - reference))
+        if abs(best - reference) > timedelta(days=16):
+            return None
+        return best
 
 
 @dataclass

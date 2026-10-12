@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `DayTime.to_datetime(reference)` resolves a day/time group to the nearest
+  timezone-aware UTC `datetime`, handling month/year rollover and hour `24`.
+
 ## [0.1.0] - 2026-10-12
 
 ### Added
