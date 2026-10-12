@@ -90,7 +90,8 @@ def _fmt_time(t: Optional[DayTime]) -> str:
     if t is None:
         return "?"
     day = f"day {t.day} " if t.day is not None else ""
-    return f"{day}{t.hour:02d}:{t.minute:02d}Z"
+    hour = f"{t.hour:02d}" if t.hour is not None else "??"
+    return f"{day}{hour}:{t.minute:02d}Z"
 
 
 def _fmt_num(value: float) -> str:

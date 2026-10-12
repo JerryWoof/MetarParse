@@ -29,12 +29,13 @@ class DayTime:
     """Day of month plus UTC time, as used in METAR/TAF groups (``121630Z``)."""
 
     day: Optional[int]
-    hour: int
+    hour: Optional[int]  # None when only minutes were reported (US remarks)
     minute: int = 0
 
     def __str__(self) -> str:
         day = f"{self.day:02d}" if self.day is not None else ""
-        return f"{day}{self.hour:02d}{self.minute:02d}Z"
+        hour = f"{self.hour:02d}" if self.hour is not None else ""
+        return f"{day}{hour}{self.minute:02d}Z"
 
 
 @dataclass
@@ -281,7 +282,7 @@ class Metar(_Report):
 class TafChangeGroup(Forecast):
     """One period of a TAF: the base forecast or an ``FM``/``BECMG``/``TEMPO``/``PROB`` group."""
 
-    kind: str = "BASE"  # BASE, FM, BECMG, TEMPO, PROB
+    kind: str = "BASE"  # BASE, FM, BECMG, TEMPO, INTER, PROB
     probability: Optional[int] = None  # 30 or 40 for PROB30 / PROB40 (also PROB30 TEMPO)
     valid_from: Optional[DayTime] = None
     valid_to: Optional[DayTime] = None

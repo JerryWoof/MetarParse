@@ -31,6 +31,7 @@ from .groups import (
 )
 from .models import Forecast, Metar, ParseIssue, TrendGroup
 
+_CC_RE = re.compile(r"^CC[A-Z]$")
 REPORT_TYPES = ("METAR", "SPECI")
 TREND_KINDS = ("NOSIG", "BECMG", "TEMPO")
 
@@ -164,7 +165,7 @@ def _parse_body(tokens: List[str], metar: Metar) -> int:
             metar.auto = True
             i += 1
             continue
-        if token == "COR":
+        if token == "COR" or _CC_RE.match(token):  # Canada: CCA, CCB ...
             metar.corrected = True
             i += 1
             continue
@@ -274,7 +275,7 @@ def _parse_header(tokens: List[str], metar: Metar) -> int:
         token = tokens[i]
         if i == 0 and token in REPORT_TYPES:
             metar.report_type = token
-        elif token == "COR":
+        elif token == "COR" or _CC_RE.match(token):
             metar.corrected = True
         elif token == "AUTO":
             metar.auto = True
@@ -332,4 +333,20 @@ def parse_metar(raw: str) -> Metar:
             metar.remarks = parse_remarks(remarks_text)
         except Exception as exc:  # keep the METAR usable if the remarks decoder fails
             metar.issues.append(ParseIssue(remarks_text, f"remarks decoding failed: {exc}"))
+        else:
+            _complete_remark_times(metar)
     return metar
+
+
+def _complete_remark_times(metar: Metar) -> None:
+    """Fill in the hour of minutes-only remark times (``PK WND 28045/55``, ``WSHFT 30``).
+
+    Such events happened within the hour before the observation.
+    """
+    obs, rmk = metar.time, metar.remarks
+    if obs is None or obs.hour is None or rmk is None:
+        return
+    events = [rmk.wind_shift, rmk.peak_wind.time if rmk.peak_wind else None]
+    for t in events:
+        if t is not None and t.hour is None:
+            t.hour = obs.hour if t.minute <= obs.minute else (obs.hour - 1) % 24
