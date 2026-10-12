@@ -37,8 +37,9 @@ CLEAR_SKY = ("SKC", "CLR", "NSC", "NCD")
 COMPASS = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 
 _DAYTIME_RE = re.compile(r"^(\d{2})(\d{2})(\d{2})Z$")
+# The trailing "S?" tolerates the common "KTS" typo.
 _WIND_RE = re.compile(
-    r"^(?P<dir>[0-3]\d0|VRB|///)(?P<spd>P?\d{2,3}|//)(?:G(?P<gust>P?\d{2,3}))?(?P<unit>KT|MPS|KMH)$"
+    r"^(?P<dir>[0-3]\d0|VRB|///)(?P<spd>P?\d{2,3}|//)(?:G(?P<gust>P?\d{2,3}))?(?P<unit>KT|MPS|KMH)S?$"
 )
 _WIND_VAR_RE = re.compile(r"^(\d{3})V(\d{3})$")
 _VIS_METRIC_RE = re.compile(r"^(\d{4})(NDV|N|NE|E|SE|S|SW|W|NW)?$")
@@ -139,6 +140,10 @@ def parse_visibility(tokens: List[str], i: int) -> Tuple[Optional[Visibility], i
         if direction == "NDV":
             direction = None
         return Visibility(float(int(m.group(1))), "M", direction=direction), 1
+
+    m = re.match(r"^(\d{1,2})KM$", token)  # 17KM, used by some stations
+    if m:
+        return Visibility(float(int(m.group(1)) * 1000), "M"), 1
 
     m = _VIS_SM_RE.match(token)
     if m:

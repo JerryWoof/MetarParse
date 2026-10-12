@@ -43,6 +43,14 @@ _RUNWAY_STATE_RE = re.compile(
 )
 # Missing pressure: Q////, A////
 _MISSING_PRESSURE_RE = re.compile(r"^[QA]/{4}$")
+# Military airfield colour states, alone or combined: BLU, WHT+, BLACKYLO1, BLU+BLU+
+_COLOR = r"(?:BLU|WHT|GRN|YLO[12]?|AMB|RED)\+?"
+_COLOR_STATE_RE = re.compile(rf"^(?:BLACK)?{_COLOR}(?:{_COLOR})*$")
+# Sea state (WMO): W12/S4 (state of the sea) or W18/H10 (wave height, dm)
+_SEA_STATE_RE = re.compile(r"^W(?:M?\d{2}|//)/(?:S[\d/]|H[\d/]{1,3})$")
+# Placeholders for groups the station could not report: ////SM, RE//, R22/////,
+# and the US "M" / "MM" missing markers.
+_MISSING_GROUP_RE = re.compile(r"^(?:/+(?:SM|KT|MPS)|RE/+|R\d{2}[LCR]?/+|MM?)$")
 
 
 def _is_missing(token: str) -> bool:
@@ -205,6 +213,13 @@ def _parse_body(tokens: List[str], metar: Metar) -> int:
                 and metar.visibility.unit == "M"
             ):
                 metar.min_visibility = vis  # e.g. "4000 1500SW"
+            elif (
+                vis.unit == "M"
+                and metar.min_visibility is None
+                and metar.visibility.unit == "M"
+                and vis.value < metar.visibility.value  # type: ignore[operator]
+            ):
+                metar.min_visibility = vis  # minimum without direction: "9999 4900" (AUTO, NDV)
             else:
                 metar.issues.append(ParseIssue(" ".join(tokens[i : i + used]), "extra visibility"))
             i += used
@@ -259,7 +274,17 @@ def _parse_body(tokens: List[str], metar: Metar) -> int:
             i += 1
             continue
 
-        if _is_missing(token):
+        if _COLOR_STATE_RE.match(token):
+            metar.color_state = token
+            i += 1
+            continue
+
+        if _SEA_STATE_RE.match(token):
+            metar.sea_state = token
+            i += 1
+            continue
+
+        if _is_missing(token) or _MISSING_GROUP_RE.match(token):
             i += 1
             continue
 

@@ -268,3 +268,46 @@ def test_minutes_only_remark_times_get_observation_hour():
     )
     assert (m.remarks.peak_wind.time.hour, m.remarks.peak_wind.time.minute) == (16, 40)
     assert (m.remarks.wind_shift.hour, m.remarks.wind_shift.minute) == (15, 58)
+
+
+@pytest.mark.parametrize(
+    "raw, attr, expected",
+    [
+        ("METAR ETNG 121620Z 24010KT 9999 FEW030 12/06 Q1018 BLU", "color_state", "BLU"),
+        ("METAR ETNG 121620Z 24010KT 3000 BR BKN006 12/11 Q1018 YLO1 GRN", "color_state", "GRN"),
+        ("METAR ETNG 121620Z 24010KT 9999 FEW030 12/06 Q1018 BLU+BLU+", "color_state", "BLU+BLU+"),
+        ("METAR ENZV 121620Z 27025KT 9999 FEW020 10/05 Q1001 W12/S4", "sea_state", "W12/S4"),
+        ("METAR EHAK 121625Z AUTO 25020KT 9999 NCD 12/09 Q1009 W///H///", "sea_state", "W///H///"),
+    ],
+)
+def test_military_colour_and_sea_state(raw, attr, expected):
+    m = parse_metar(raw)
+    assert getattr(m, attr) == expected
+    assert not m.issues
+
+
+def test_kilometre_visibility():
+    m = parse_metar("METAR NCAT 121600Z 09010KT 17KM FEW020 27/22 Q1012")
+    assert m.visibility.meters == 17000
+    assert m.flight_category == "VFR"
+    assert not m.issues
+
+
+def test_minimum_visibility_without_direction():
+    m = parse_metar("METAR LFPO 121600Z AUTO 24010KT 9999 4900 -RA BKN030 12/10 Q1012")
+    assert (m.visibility.meters, m.min_visibility.meters) == (9999, 4900)
+    assert not m.issues
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "METAR CYXX 121600Z AUTO 24010KT ////SM BKN030 12/10 A2992",
+        "METAR KXXX 121653Z 24010KT 10SM CLR M 12/10 A2992",
+        "METAR LKPR 121630Z 24010KT 9999 FEW030 12/06 Q1018 RE//",
+        "METAR LKPR 121630Z 24010KT 9999 R22///// FEW030 12/06 Q1018",
+        "METAR KXXX 121653Z 09010KTS 10SM CLR 12/10 A2992",
+    ],
+)
+def test_missing_placeholders_and_typos_are_quiet(raw):
+    assert not parse_metar(raw).issues
