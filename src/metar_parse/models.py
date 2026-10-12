@@ -314,6 +314,8 @@ class Metar(_Report):
     pressure: Optional[Pressure] = None
     windshear: List[str] = field(default_factory=list)  # WS R24, WS ALL RWY
     runway_state: List[str] = field(default_factory=list)  # R24/290050 etc.
+    color_state: Optional[str] = None  # military airfield colour code: BLU, WHT+, GRN ...
+    sea_state: Optional[str] = None  # W12/S4, W18/H10 (offshore / coastal stations)
     trends: List[TrendGroup] = field(default_factory=list)
     remarks: Optional[Remarks] = None
     issues: List[ParseIssue] = field(default_factory=list)
