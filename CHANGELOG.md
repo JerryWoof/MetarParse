@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-12
+
 ### Added
 
 - MetarParse Live: a world map of live airport weather and an in-browser
@@ -14,11 +16,6 @@ All notable changes to this project are documented here. The format follows
   visibility and Australian `INTER` groups.
 - `DayTime.to_datetime(reference)` resolves a day/time group to the nearest
   timezone-aware UTC `datetime`, handling month/year rollover and hour `24`.
-
-## [0.1.0] - 2026-10-12
-
-### Added
-
 - `parse_metar` for METAR/SPECI reports in ICAO and US formats, including trend
   groups, RVR, wind shear and runway state.
 - `parse_remarks` for common US/ASOS `RMK` groups.
