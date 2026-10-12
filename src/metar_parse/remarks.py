@@ -52,10 +52,10 @@ def _hundredths(raw: str) -> Optional[float]:
 
 
 def _time(hour: Optional[str], minute: str) -> Optional[DayTime]:
-    """Remark time ``(hh)mm``. A missing hour is stored as ``-1``."""
-    h = int(hour) if hour is not None else -1
+    """Remark time ``(hh)mm``. A missing hour is stored as ``None``."""
+    h = int(hour) if hour is not None else None
     m = int(minute)
-    if h > 24 or m > 59:
+    if (h is not None and h > 24) or m > 59:
         return None
     return DayTime(None, h, m)
 
@@ -165,7 +165,7 @@ def parse_remarks(text: str) -> Remarks:
     Times in ``PK WND`` and ``WSHFT`` are ``DayTime(None, hh, mm)``. When only
     minutes are reported (``PK WND 28045/55``, ``WSHFT 30``) the hour is
     implied by the observation time, which is unknown here, so ``hour`` is
-    set to ``-1``.
+    set to ``None`` (``parse_metar`` fills it in from the observation time).
     """
     rmk = Remarks(raw=text)
     tokens = (text or "").split()

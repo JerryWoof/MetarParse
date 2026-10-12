@@ -236,3 +236,27 @@ def test_raw_preserved_and_to_dict():
     data = taf.to_dict()
     assert data["groups"][1]["kind"] == "FM"
     json.dumps(data)
+
+
+def test_australian_inter_groups():
+    taf = parse_taf(
+        "TAF YSSY 121700Z 1218/1324 18012KT 9999 SCT030 INTER 1218/1222 4000 SHRA BKN012 "
+        "PROB30 INTER 1300/1303 2000 TSRA"
+    )
+    assert [g.kind for g in taf.groups] == ["BASE", "INTER", "INTER"]
+    assert taf.groups[2].probability == 30
+    assert not taf.issues
+
+
+def test_us_amendment_notes_go_to_remarks():
+    taf = parse_taf(
+        "TAF KNFW 111500Z 1115/1215 18015G20KT 9999 FEW020 QNH2991INS "
+        "LAST NO AMDS AFT 1115 NEXT 1307 TX32/1122Z TN22/1212Z FN20070"
+    )
+    assert taf.remarks_raw == "LAST NO AMDS AFT 1115 NEXT 1307"
+    assert [t.kind for t in taf.temperatures] == ["TX", "TN"]
+    assert not taf.issues
+
+    taf = parse_taf("TAF KOTM 121138Z 1212/1312 20009KT P6SM SCT200 AMD NOT SKED")
+    assert taf.remarks_raw == "AMD NOT SKED"
+    assert not taf.issues

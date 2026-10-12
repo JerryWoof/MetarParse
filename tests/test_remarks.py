@@ -108,9 +108,9 @@ def test_peak_wind_three_digit_speed():
     assert r.peak_wind == PeakWind(90, 105, DayTime(None, 0, 12))
 
 
-def test_peak_wind_minutes_only_uses_hour_minus_one():
+def test_peak_wind_minutes_only_has_no_hour():
     r = parse_remarks("PK WND 28045/55")
-    assert r.peak_wind == PeakWind(280, 45, DayTime(None, -1, 55))
+    assert r.peak_wind == PeakWind(280, 45, DayTime(None, None, 55))
 
 
 def test_bad_peak_wind_is_unparsed():
@@ -121,7 +121,7 @@ def test_bad_peak_wind_is_unparsed():
 
 def test_wind_shift_without_fropa():
     r = parse_remarks("WSHFT 30")
-    assert r.wind_shift == DayTime(None, -1, 30)
+    assert r.wind_shift == DayTime(None, None, 30)
     assert r.wind_shift_frontal is False
 
 

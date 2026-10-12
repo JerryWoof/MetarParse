@@ -217,6 +217,8 @@ def parse_cloud(token: str) -> Optional[CloudLayer]:
         return CloudLayer(cover=token)
     if token == "//////":
         return CloudLayer(cover="///")
+    if token in ("///CB", "///TCU"):  # convective cloud, cover and height unknown
+        return CloudLayer(cover="///", cloud_type=token[3:])
     m = _CLOUD_RE.match(token)
     if not m:
         return None

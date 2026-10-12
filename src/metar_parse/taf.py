@@ -44,10 +44,15 @@ _OLD_VALIDITY_RE = re.compile(r"^(\d{2})(\d{2})(\d{2})$")  # header 121212
 _TEMP_RE = re.compile(r"^(?P<kind>TX|TN)(?P<neg>M)?(?P<t>\d{2})/(?P<day>\d{2})?(?P<hour>\d{2})Z$")
 _WINDSHEAR_RE = re.compile(r"^WS\d{3}/\d{3}\d{2,3}(?:KT|MPS)$")
 _QNH_RE = re.compile(r"^QNH\d{4}INS$")
+_MILITARY_RE = re.compile(r"^(?:[56]\d{5}|FN\d{5})$")  # icing/turbulence, forecast number
+# Amendment notes appended to US/military TAFs; stored with the remarks.
+_AMENDMENT_NOTES = (("AMD", "NOT", "SKED"), ("AMD", "LTD", "TO"), ("LAST", "NO", "AMDS"))
 
 
 def _is_group_start(token: str) -> bool:
-    return token in ("BECMG", "TEMPO") or bool(_FM_RE.match(token) or _PROB_RE.match(token))
+    return token in ("BECMG", "TEMPO", "INTER") or bool(
+        _FM_RE.match(token) or _PROB_RE.match(token)
+    )
 
 
 def _parse_fm(token: str) -> Optional[DayTime]:
@@ -124,7 +129,7 @@ def _decode_body(tokens: List[str], group: TafChangeGroup, taf: Taf) -> None:
             group.wind.variable_from_deg, group.wind.variable_to_deg = lo, hi
         elif _parse_temperature(token):
             taf.temperatures.append(_parse_temperature(token))  # type: ignore[arg-type]
-        elif _WINDSHEAR_RE.match(token) or _QNH_RE.match(token):
+        elif _WINDSHEAR_RE.match(token) or _QNH_RE.match(token) or _MILITARY_RE.match(token):
             pass  # recognised, but not represented in the model
         elif parse_weather(token):
             group.weather.append(parse_weather(token))  # type: ignore[arg-type]
@@ -145,7 +150,7 @@ def _split_groups(tokens: List[str]) -> List[List[str]]:
     chunks: List[List[str]] = [[]]
     for j, token in enumerate(tokens):
         # "PROB40 TEMPO" is a single group: don't split at the TEMPO.
-        joined_prob = token == "TEMPO" and j > 0 and _PROB_RE.match(tokens[j - 1])
+        joined_prob = token in ("TEMPO", "INTER") and j > 0 and _PROB_RE.match(tokens[j - 1])
         if _is_group_start(token) and not joined_prob:
             chunks.append([])
         chunks[-1].append(token)
@@ -167,11 +172,11 @@ def _build_change_group(chunk: List[str], taf: Taf) -> TafChangeGroup:
         if prob:
             group.probability = int(prob.group(1))
             group.kind = "PROB"
-            if rest and rest[0] == "TEMPO":
-                group.kind = "TEMPO"
+            if rest and rest[0] in ("TEMPO", "INTER"):
+                group.kind = rest[0]
                 rest = rest[1:]
         else:
-            group.kind = head  # BECMG or TEMPO
+            group.kind = head  # BECMG, TEMPO or INTER (Australia)
         period = _parse_change_period(rest[0]) if rest else None
         if period:
             group.valid_from, group.valid_to = period
@@ -181,6 +186,24 @@ def _build_change_group(chunk: List[str], taf: Taf) -> TafChangeGroup:
 
     _decode_body(rest, group, taf)
     return group
+
+
+def _extract_amendment_notes(tokens: List[str], taf: Taf) -> List[str]:
+    """Move ``AMD NOT SKED`` / ``LAST NO AMDS AFT 1115 NEXT 1307`` phrases to remarks_raw.
+
+    A note runs until the next TX/TN temperature or change group.
+    """
+    for k in range(1, len(tokens)):
+        if tuple(tokens[k : k + 3]) in _AMENDMENT_NOTES:
+            end = k + 3
+            while end < len(tokens) and not (
+                _parse_temperature(tokens[end]) or _is_group_start(tokens[end])
+            ):
+                end += 1
+            note = " ".join(tokens[k:end])
+            taf.remarks_raw = f"{note} {taf.remarks_raw}" if taf.remarks_raw else note
+            return tokens[:k] + tokens[end:]
+    return tokens
 
 
 def parse_taf(raw: str) -> Taf:
@@ -203,6 +226,7 @@ def parse_taf(raw: str) -> Taf:
         taf.remarks_raw = " ".join(tokens[k + 1 :])
         tokens = tokens[:k]
     tokens = [t.rstrip("=") for t in tokens if t.rstrip("=")]
+    tokens = _extract_amendment_notes(tokens, taf)
 
     # --- header ---
     i = 0

@@ -248,3 +248,23 @@ def test_wind_variation_without_wind():
     m = parse_metar("LKPR 121630Z 200V270 9999")
     assert m.wind is None
     assert m.issues[0].token == "200V270"
+
+
+def test_canadian_correction_cca():
+    m = parse_metar("METAR CYYZ 121600Z CCA 27010KT 15SM FEW040 12/04 A3001")
+    assert m.corrected
+    assert not m.issues
+
+
+def test_convective_cloud_without_height():
+    m = parse_metar("METAR LKPR 121630Z 24012KT 9999 ///TCU 14/09 Q1012")
+    assert m.clouds[0].cloud_type == "TCU"
+    assert not m.issues
+
+
+def test_minutes_only_remark_times_get_observation_hour():
+    m = parse_metar(
+        "METAR KDEN 121653Z 28030G45KT 10SM FEW080 20/M02 A2990 RMK AO2 PK WND 28045/40 WSHFT 58"
+    )
+    assert (m.remarks.peak_wind.time.hour, m.remarks.peak_wind.time.minute) == (16, 40)
+    assert (m.remarks.wind_shift.hour, m.remarks.wind_shift.minute) == (15, 58)
