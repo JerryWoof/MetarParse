@@ -110,6 +110,7 @@ def test_split_tafs_without_taf_prefix():
         (urllib.error.URLError("Name or service not known"), "cannot reach"),
         (socket.timeout("timed out"), "network error"),
     ],
+    ids=["http-error", "url-error", "timeout"],  # HTTPError has no safe repr on 3.9
 )
 def test_network_errors(urlopen, error, match):
     urlopen["error"] = error
