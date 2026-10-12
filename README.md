@@ -10,6 +10,9 @@
 ~5,000 airports worldwide, decoded by this library every 30 minutes.
 **[Decode a METAR in your browser →](https://jerrywoof.github.io/MetarParse/decode.html)**
 
+Used by **[StationTruth](https://github.com/JerryWoof/StationTruth)**, which checks
+ECMWF and GFS forecasts against ~5,000 airports worldwide.
+
 Decodes raw aviation weather reports into typed dataclasses and clean JSON. No
 dependencies, no exceptions on bad input: tokens it cannot decode end up in
 `report.issues` instead.
