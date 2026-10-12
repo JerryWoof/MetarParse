@@ -6,6 +6,10 @@
 
 **Fast, tolerant METAR & TAF parser for Python.**
 
+**[🌍 MetarParse Live](https://jerrywoof.github.io/MetarParse/)**: live weather for
+~5,000 airports worldwide, decoded by this library every 30 minutes.
+**[Decode a METAR in your browser →](https://jerrywoof.github.io/MetarParse/decode.html)**
+
 Decodes raw aviation weather reports into typed dataclasses and clean JSON. No
 dependencies, no exceptions on bad input: tokens it cannot decode end up in
 `report.issues` instead.
